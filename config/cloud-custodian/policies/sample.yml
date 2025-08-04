@@ -1,7 +1,16 @@
 policies:
-  - name: ec2-instances-stop
+  - name: ec2-instances-stop-dev-after-12-hours
     resource: ec2
+    region: us-east-1
     filters:
-      - "tag:Environment": absent
+      - "tag:Env": "dev"
+      - type: instance-state
+        key: Name
+        value: running
+      - type: value
+        key: LaunchTime
+        op: less-than
+        value_type: age
+        value: 12
     actions:
       - stop

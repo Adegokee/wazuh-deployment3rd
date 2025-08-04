@@ -136,7 +136,10 @@ services:
     container_name: cloud-custodian
     volumes:
       - ./config/cloud-custodian/policies:/policies
-    command: ["run", "-s", "/output", "/policies/sample-policy.yml"]
+      - ./config/cloud-custodian/output:/output   # <-- Add this line
+    command: ["run", "-s", "/output", "config/cloud-custodian/policies/sample-policy.yml"]
+    environment:
+      - AWS_DEFAULT_REGION=us-east-1
     restart: unless-stopped
     networks:
       - wazuh_network

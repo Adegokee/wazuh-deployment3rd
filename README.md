@@ -28,14 +28,14 @@ The environment takes about 1 minute to get up (depending on your Docker host) f
 1) # Generate private key for Root CA
 openssl genrsa -out root-ca.key 4096
 
-# Generate Root CA certificate
+### Generate Root CA certificate
 openssl req -x509 -new -nodes -key root-ca.key -sha256 -days 3650 -out root-ca.pem -subj "/C=US/ST=State/L=City/O=Organization/CN=RootCA"
 
-# Generate private key for Filebeat
+### Generate private key for Filebeat
 openssl genrsa -out filebeat.key 2048
 
-# Generate CSR for Filebeat
+### Generate CSR for Filebeat
 openssl req -new -key filebeat.key -out filebeat.csr -subj "/C=US/ST=State/L=City/O=Organization/CN=filebeat"
 
-# Create Filebeat certificate signed by Root CA
+### Create Filebeat certificate signed by Root CA
 openssl x509 -req -in filebeat.csr -CA root-ca.pem -CAkey root-ca.key -CAcreateserial -out filebeat.pem -days 365 -sha256

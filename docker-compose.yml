@@ -1,6 +1,5 @@
 # Wazuh App Copyright (C) 2017, Wazuh Inc. (License GPLv2)
 version: '3.7'
-
 networks:
   wazuh_network:
     driver: bridge
@@ -71,6 +70,7 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
       - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/wazuh-indexer/certs/root-ca.pem
@@ -107,7 +107,7 @@ services:
       - wazuh-dashboard-config:/usr/share/wazuh-dashboard/data/wazuh/config
       - wazuh-dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
     depends_on:
-      - wazuh.indexer
+      - wazuh.indexer    
     links:
       - wazuh.indexer:wazuh.indexer
       - wazuh.manager:wazuh.manager
@@ -121,14 +121,17 @@ services:
       - wazuh_network
     user: root
     volumes:
-      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - config/wazuh_indexer_ssl_certs/filebeat.key
-      - config/wazuh_indexer_ssl_certs/filebeat.pem
-      - config/wazuh_indexer_ssl_certs/root-ca.pem
+    - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    
+    - ./config/cloud-custodian/logs:/logs
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/filebeat/certs/root-ca.pem:ro
+    - ./config/wazuh_indexer_ssl_certs/filebeat.key:/usr/share/filebeat/certs/filebeat.key:ro
+    - ./config/wazuh_indexer_ssl_certs/filebeat.pem:/usr/share/filebeat/certs/filebeat.pem:ro
     depends_on:
-      - wazuh_manager
+      - wazuh.indexer
+        
     restart: unless-stopped
 
   cloud-custodian:
@@ -136,15 +139,18 @@ services:
     container_name: cloud-custodian
     volumes:
       - ./config/cloud-custodian/policies:/policies
+      - ./config/cloud-custodian/logs:/logs
       - ./config/cloud-custodian/output:/output   # <-- Add this line
-    command: ["run", "-s", "/output", "config/cloud-custodian/policies/sample-policy.yml"]
+    command: ["/bin/sh", "-c", "custodian run -s /output /policies/sample-policy.yml >> /logs/c7n.log 2>&1"]
     environment:
       - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     restart: unless-stopped
     networks:
       - wazuh_network
     depends_on:
-      - wazuh_manager
+      - wazuh.manager
 
 
   nginx:
@@ -154,13 +160,12 @@ services:
       - "80:80"
       # - "443:443"
     volumes:
-      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
     depends_on:
       - wazuh.dashboard
     restart: unless-stopped
 
- 
- 
 
 volumes:
   wazuh_api_configuration:

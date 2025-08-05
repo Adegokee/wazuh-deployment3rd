@@ -1,0 +1,13 @@
+policies:
+  - name: ec2-stop-after-3-hours
+    resource: ec2
+    filters:
+      - type: value
+        key: State.Name
+        value: running
+      - type: instance-uptime
+        op: greater-than
+        days: 0.125
+    actions:
+      - stop
+

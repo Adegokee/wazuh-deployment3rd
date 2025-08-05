@@ -1,7 +1,28 @@
 filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /logs/c7n.log
+
+  # Optional: capture docker logs
   - type: container
     paths:
       - /var/lib/docker/containers/*/*.log
 
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+
+output.logstash:
+  hosts: ["wazuh.manager:5000"]  # Use your Filebeat output method
+
+
 output.elasticsearch:
-  hosts: ["http://wazuh_indexer:9200"]
+  hosts: ["https://wazuh_indexer:9200"]
+  protocol: "https"
+  ssl.certificate_authorities: ["/usr/share/filebeat/certs/root-ca.pem"]
+  ssl.certificate: "/usr/share/filebeat/certs/filebeat.pem"
+  ssl.key: "/usr/share/filebeat/certs/filebeat.key"
+  username: "admin"
+  password: "SecretPassword"
+
